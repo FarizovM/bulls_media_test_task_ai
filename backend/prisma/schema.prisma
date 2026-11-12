@@ -33,6 +33,7 @@ model ResolutionTicket {
   createdAt                    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@index([orderId, createdAt(sort: Desc)], map: "resolution_tickets_order_created_idx")
+  @@index([idempotencyKey])
   @@map("resolution_tickets")
 }
 
