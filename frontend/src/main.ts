@@ -1,6 +1,7 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import './style.css';
+import './ui-polish.css';
 import { completeSignIn } from './services/auth';
 
 async function bootstrap() {

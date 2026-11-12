@@ -61,6 +61,7 @@ services:
         VITE_OIDC_AUTHORITY: ${VITE_OIDC_AUTHORITY:?Set VITE_OIDC_AUTHORITY}
         VITE_OIDC_CLIENT_ID: ${VITE_OIDC_CLIENT_ID:?Set VITE_OIDC_CLIENT_ID}
         VITE_OIDC_SCOPE: ${VITE_OIDC_SCOPE:-openid agent:read agent:triage}
+        VITE_REQUIRE_OIDC: "true"
         OIDC_ORIGIN: ${OIDC_ORIGIN:?Set OIDC_ORIGIN}
     restart: unless-stopped
     environment:

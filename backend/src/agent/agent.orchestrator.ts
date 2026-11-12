@@ -14,6 +14,7 @@ import { GuardrailsService } from './guardrails.service';
 import { AGENT_INSTRUCTIONS } from './prompts';
 import { ToolsService } from '../tools/tools.service';
 import { TraceCollectorService, TraceSession } from '../observability/trace-collector.service';
+import { SecurityAuditService } from '../observability/security-audit.service';
 import { withRetry } from '../observability/retry.util';
 
 const CreateResolutionTicketInputSchema = z.object({
@@ -49,9 +50,15 @@ export class AgentOrchestratorService {
     @Inject(GuardrailsService) private readonly guardrails: GuardrailsService,
     @Inject(ToolsService) private readonly tools: ToolsService,
     @Inject(TraceCollectorService) private readonly traceCollector: TraceCollectorService,
+    @Inject(SecurityAuditService) private readonly securityAudit: SecurityAuditService,
   ) { }
 
-  async triage(message: string, idempotencyKey: string = randomUUID(), actorId = 'local-development'): Promise<TriageResponse> {
+  async triage(
+    message: string,
+    idempotencyKey: string = randomUUID(),
+    actorId = 'local-development',
+    requestId: string = randomUUID(),
+  ): Promise<TriageResponse> {
     const startedAt = Date.now();
     const trace = this.traceCollector.createSession();
     const apiKey = this.config.get<string>('OPENAI_API_KEY')?.trim();
@@ -75,6 +82,14 @@ export class AgentOrchestratorService {
     });
 
     if (!guardrailResult.accepted) {
+      if (guardrailResult.reasonCode === 'PROMPT_INJECTION_DETECTED') {
+        await this.securityAudit.recordPromptInjection({
+          requestId,
+          actorSubject: actorId,
+          detectionCode: 'PROMPT_INJECTION_DETECTED',
+          inputLength: message.length,
+        });
+      }
       return this.finish(
         this.baseDecision({
           status: 'REFUSED_GUARDRAIL',

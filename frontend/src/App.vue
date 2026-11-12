@@ -173,6 +173,11 @@ function formatUsd(value: number) {
           </div>
 
           <div v-if="error" class="error-box"><span>!</span>{{ error }}</div>
+          <div v-else-if="loading" class="empty-state processing-state" role="status" aria-live="polite">
+            <div class="empty-orbit processing-orbit" aria-hidden="true"><span>✳</span></div>
+            <strong>Агент аналізує запит…</strong>
+            <p>Перевіряю замовлення та правила повернення.</p>
+          </div>
           <div v-else-if="!result" class="empty-state">
             <div class="empty-orbit"><span>✳</span></div>
             <strong>{{ dataReady ? 'Готовий перевірити запит' : 'З’єднуємося з агентом…' }}</strong>

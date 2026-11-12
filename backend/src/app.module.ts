@@ -8,6 +8,7 @@ import { TraceCollectorService } from './observability/trace-collector.service';
 import { OidcAuthGuard } from './auth/oidc-auth.guard';
 import { DatabaseService } from './database/database.service';
 import { HealthController } from './health/health.controller';
+import { SecurityAuditService } from './observability/security-audit.service';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true, envFilePath: ['../.env', '.env'] })],
@@ -19,6 +20,7 @@ import { HealthController } from './health/health.controller';
     TraceCollectorService,
     OidcAuthGuard,
     DatabaseService,
+    SecurityAuditService,
   ],
 })
 export class AppModule {}

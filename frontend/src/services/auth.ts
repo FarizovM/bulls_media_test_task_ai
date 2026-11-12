@@ -1,10 +1,10 @@
 import { UserManager, WebStorageStateStore } from 'oidc-client-ts';
 
-const { VITE_OIDC_AUTHORITY, VITE_OIDC_CLIENT_ID, VITE_OIDC_SCOPE } = import.meta.env;
+const { VITE_OIDC_AUTHORITY, VITE_OIDC_CLIENT_ID, VITE_OIDC_SCOPE, VITE_REQUIRE_OIDC } = import.meta.env;
 
 export const authEnabled = Boolean(VITE_OIDC_AUTHORITY && VITE_OIDC_CLIENT_ID);
 
-if (import.meta.env.PROD && !authEnabled) {
+if (VITE_REQUIRE_OIDC === 'true' && !authEnabled) {
   throw new Error('Production authentication settings are missing from the frontend build.');
 }
 

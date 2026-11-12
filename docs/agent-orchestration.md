@@ -5,7 +5,7 @@
 ## Послідовність одного запиту
 
 1. `POST /api/agent/triage` приймає повідомлення і перевіряє його Zod-схемою.
-2. `GuardrailsService` відсікає короткий, надто довгий, сторонній або схожий на prompt injection запит.
+2. `GuardrailsService` відсікає короткий, надто довгий, сторонній або схожий на prompt injection запит. Збіг детектора записується як безпечна подія аудиту: request ID, користувач, код детектора та довжина; сирий текст не потрапляє до журналу.
 3. Оркестратор знаходить номер замовлення. Якщо його немає, повертає `MISSING_INFORMATION` і не створює тікет.
 4. `get_order_details` читає замовлення з PostgreSQL у production або з локального JSON у розробці й додає кількість днів від покупки.
 5. `search_return_policy` читає структуровані числові правила з `refund-policy.json`, додає версію політики й знаходить пояснювальний фрагмент у Markdown.
@@ -43,6 +43,7 @@ sequenceDiagram
 - `backend/src/agent/guardrails.service.ts` — рання перевірка, що блокує звернення до інструментів для невалідного запиту.
 - `backend/src/tools/tools.service.ts` — інструменти та локальні дані. Тут лежить детермінований захист перед записом тікета.
 - `backend/src/auth/oidc-auth.guard.ts` — перевірка підпису, issuer, audience і scope access token у production.
+- `backend/src/observability/security-audit.service.ts` — структуроване логування спрацювань prompt injection і запис метаданих у PostgreSQL.
 - `backend/src/database/database.service.ts` та `backend/migrations/` — PostgreSQL, ідемпотентне збереження та схема аудиту тікетів.
 - `backend/src/agent/schemas.ts` — контракти даних, які з'єднують API, агента й інтерфейс.
 - `backend/src/observability/trace-collector.service.ts` — окрема траса на кожен запит, щоб паралельні запити не змішували кроки.
@@ -64,4 +65,4 @@ sequenceDiagram
 
 ## Безпека та операційні межі
 
-Guardrails є одним із рівнів перевірки, а не повним захистом від усіх атак. API вимагає OIDC у production; PostgreSQL зберігає тікети з ідемпотентністю й actor subject. Джерело замовлень у цій версії лишається JSON-заглушкою, тому перед роботою з реальними клієнтами треба підключити авторитетний order-сервіс і затвердити політику повернення.
+Guardrails є одним із рівнів перевірки, а не повним захистом від усіх атак. Журналізуються лише спрацювання реалізованих евристик; невиявлений prompt injection можливий. API вимагає OIDC у production; PostgreSQL зберігає тікети з ідемпотентністю й actor subject. Джерело замовлень у цій версії лишається JSON-заглушкою, тому перед роботою з реальними клієнтами треба підключити авторитетний order-сервіс і затвердити політику повернення.

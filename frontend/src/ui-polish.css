@@ -1,0 +1,141 @@
+/* Keep the result change calm and stable while the API request is in flight. */
+.run-glyph,
+.run-button .spinner {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 13px;
+  display: grid;
+  place-items: center;
+}
+
+.run-button .spinner {
+  display: block;
+}
+
+.processing-orbit {
+  animation: processing-orbit-turn 5s linear infinite;
+  will-change: transform;
+}
+
+.decision-card {
+  transform-origin: top center;
+  animation: decision-enter 260ms cubic-bezier(.2, .7, .2, 1) both;
+}
+
+.status-chip i {
+  animation: decision-indicator-enter 180ms ease-out both;
+}
+
+@keyframes processing-orbit-turn {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes decision-enter {
+  from { opacity: 0; transform: translateY(7px) scale(.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes decision-indicator-enter {
+  from { opacity: .35; transform: scale(.65); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (min-width: 1440px) {
+  .workspace {
+    max-width: 1600px;
+    padding: 48px 36px 32px;
+  }
+
+  .topbar { height: 82px; }
+  .panel { padding: 28px; }
+  .orders-panel { padding: 23px 27px; }
+  .brand-copy strong { font-size: 12px; }
+  .brand-copy small { font-size: 10px; }
+  .avatar { font-size: 11px; }
+  .flow-hint { font-size: 11px; }
+  .intro-row h1 { font-size: clamp(38px, 2.5vw, 46px); }
+  .intro-copy { font-size: 15px; }
+  .eyebrow,
+  .section-kicker,
+  .field-label-row,
+  .scenario-heading,
+  .environment-pill,
+  .pending-tag,
+  .mode-tag,
+  .count-pill,
+  .status-chip,
+  .decision-time,
+  .trace-stage,
+  .decision-facts span,
+  .trace-title-row > span,
+  .subsection-heading > span,
+  .page-footer { font-size: clamp(10px, .72vw, 12px); }
+  .panel-heading h2,
+  .orders-title h2 { font-size: 19px; }
+  .request-panel textarea { font-size: 15px; }
+  .scenario-text strong { font-size: 13px; }
+  .scenario-text small { font-size: 11px; }
+  .run-button { height: 50px; font-size: 15px; }
+  .helper-text,
+  .trace-details summary { font-size: 11px; }
+  .empty-state strong { font-size: 15px; }
+  .empty-state p { font-size: 12px; }
+  .error-box { font-size: 13px; }
+  .decision-card h3 { font-size: 15px; }
+  .decision-facts strong { font-size: 12px; }
+  .override-note { font-size: 12px; }
+  .subsection-heading h3 { font-size: 16px; }
+  .trace-title-row strong { font-size: 13px; }
+  .trace-marker { font-size: 11px; }
+  .trace-details pre,
+  .raw-json pre,
+  .email-draft pre { font-size: 11px; }
+  .raw-json summary { font-size: 12px; }
+  .raw-json summary button { font-size: 11px; }
+  th { font-size: 10px; }
+  td,
+  .order-id { font-size: 12px; }
+  .dataset-note { font-size: 12px; }
+  .dataset-note code { font-size: 11px; }
+}
+
+@media (min-width: 1920px) {
+  .workspace {
+    max-width: 1780px;
+    padding: 58px 46px 38px;
+  }
+
+  .topbar { height: 88px; }
+  .panel { padding: 32px; }
+  .orders-panel { padding: 27px 31px; }
+  .brand-copy strong { font-size: 13px; }
+  .brand-copy small { font-size: 11px; }
+  .avatar { font-size: 12px; }
+  .intro-row h1 { font-size: clamp(46px, 2.4vw, 56px); }
+  .intro-copy { font-size: 17px; }
+  .panel-heading h2,
+  .orders-title h2 { font-size: 21px; }
+  .request-panel textarea { font-size: 16px; }
+  .scenario-text strong { font-size: 14px; }
+  .scenario-text small { font-size: 12px; }
+  .run-button { height: 54px; font-size: 16px; }
+  .decision-card h3 { font-size: 16px; }
+  .empty-state strong { font-size: 16px; }
+  .empty-state p { font-size: 13px; }
+  .decision-facts strong { font-size: 13px; }
+  .trace-title-row strong { font-size: 14px; }
+  .trace-details pre,
+  .raw-json pre,
+  .email-draft pre { font-size: 12px; }
+  td,
+  .order-id { font-size: 13px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .processing-orbit,
+  .decision-card,
+  .status-chip i,
+  .run-button .spinner {
+    animation: none !important;
+  }
+}

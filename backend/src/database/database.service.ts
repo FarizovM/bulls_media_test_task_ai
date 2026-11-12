@@ -7,7 +7,7 @@ import { Order, OrderDetails, OrderSchema, ResolutionTicket } from '../agent/sch
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   private pool?: Pool;
 
-  constructor(@Inject(ConfigService) private readonly config: ConfigService) {}
+  constructor(@Inject(ConfigService) private readonly config: ConfigService) { }
 
   get enabled(): boolean {
     return Boolean(this.pool);
@@ -16,6 +16,22 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   async checkReady(): Promise<void> {
     if (!this.pool) throw new Error('Database is not configured.');
     await this.pool.query('SELECT 1');
+  }
+
+  async savePromptInjectionEvent(event: {
+    eventId: string;
+    requestId: string;
+    actorSubject: string;
+    detectionCode: string;
+    inputLength: number;
+  }): Promise<void> {
+    if (!this.pool) throw new Error('Database is not configured.');
+    await this.pool.query(
+      `INSERT INTO security_events
+         (event_id, event_type, request_id, actor_subject, detection_code, input_length)
+       VALUES ($1, 'PROMPT_INJECTION_DETECTED', $2, $3, $4, $5)`,
+      [event.eventId, event.requestId, event.actorSubject, event.detectionCode, event.inputLength],
+    );
   }
 
   async findOrder(orderId: string): Promise<OrderDetails | undefined> {
@@ -70,8 +86,12 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         : undefined,
     });
     this.pool.on('error', () => Logger.error('Unexpected error from an idle PostgreSQL connection.', 'DatabaseService'));
-    await this.pool.query('SELECT 1 FROM resolution_tickets LIMIT 0');
-    await this.pool.query('SELECT 1 FROM orders LIMIT 0');
+
+    await Promise.all([
+      this.pool.query('SELECT 1 FROM resolution_tickets LIMIT 0'),
+      this.pool.query('SELECT 1 FROM orders LIMIT 0'),
+      this.pool.query('SELECT 1 FROM security_events LIMIT 0'),
+    ]);
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -99,7 +119,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
        RETURNING ticket_id, order_id, status, refund_amount_usd, reason_code,
                  deterministic_override_applied, note, policy_version`,
       [ticket.ticketId, ticket.orderId, ticket.status, ticket.refundAmountUsd,
-        ticket.reasonCode, ticket.deterministicOverrideApplied, ticket.note, idempotencyKey, requestHash, actorId, ticket.policyVersion],
+      ticket.reasonCode, ticket.deterministicOverrideApplied, ticket.note, idempotencyKey, requestHash, actorId, ticket.policyVersion],
     );
 
     if (result.rows[0]) return this.fromRow(result.rows[0]);

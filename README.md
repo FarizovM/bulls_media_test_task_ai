@@ -18,7 +18,7 @@
 | Дороге замовлення | ORD-1002 · $1 200 · придбано 5 днів тому | `ESCALATED_TO_HUMAN` |
 | Термін повернення минув | ORD-1003 · придбано 45 днів тому | `REJECTED_BY_POLICY` |
 | Немає номера замовлення | Пошкоджений товар без номера | `MISSING_INFORMATION`, без тікета |
-| Спроба prompt injection | Прохання проігнорувати правила | `REFUSED_GUARDRAIL`, інструменти не запускаються |
+| Спроба prompt injection | Прохання проігнорувати правила | `REFUSED_GUARDRAIL`, бізнес-інструменти не запускаються; подія аудиту записується без тексту звернення |
 
 Приклади запитів і результатів збережені у [`examples/scenarios.json`](examples/scenarios.json). Кожен сценарій також можна запустити кнопкою у вебінтерфейсі.
 
@@ -124,7 +124,7 @@ OPENAI_API_KEY=...
 OPENAI_MODEL=gpt-6-luna
 ```
 
-OIDC-клієнт фронтенду має використовувати Authorization Code Flow з PKCE. Зареєструй redirect URI `https://support.example.com/auth/callback` та надай scopes `agent:read` і `agent:triage`. Перед production-збіркою фронтенду задай `VITE_OIDC_AUTHORITY`, `VITE_OIDC_CLIENT_ID`, `VITE_OIDC_SCOPE` і `OIDC_ORIGIN` (точний HTTPS origin OIDC authority); збірка завершується помилкою, якщо клієнт входу не налаштований. API перевіряє підпис JWT, issuer, audience та потрібний scope за довіреним HTTPS JWKS endpoint.
+OIDC-клієнт фронтенду має використовувати Authorization Code Flow з PKCE. Зареєструй redirect URI `https://support.example.com/auth/callback` та надай scopes `agent:read` і `agent:triage`. Звичайний `bun run build` збирає локальне демо без OIDC. Production Compose передає `VITE_REQUIRE_OIDC=true`, тому для production-збірки потрібні `VITE_OIDC_AUTHORITY`, `VITE_OIDC_CLIENT_ID`, `VITE_OIDC_SCOPE` і `OIDC_ORIGIN` (точний HTTPS origin OIDC authority). API перевіряє підпис JWT, issuer, audience та потрібний scope за довіреним HTTPS JWKS endpoint.
 
 API має доступ `SELECT` до замовлень і `SELECT`/`INSERT` до тікетів; migration role має окремі DDL-права. API надає `GET /api/health/live` для liveness та `GET /api/health/ready` для перевірки PostgreSQL. Production Compose обмежує кожного OIDC-користувача до 30 запитів за хвилину та має глобальний аварійний ліміт на екземпляр; додай також спільний ліміт на ingress/API gateway для багатоконтейнерного розгортання.
 
@@ -135,10 +135,12 @@ CREATE ROLE bulls_agent LOGIN PASSWORD 'use-a-secret-manager-generated-password'
 GRANT CONNECT ON DATABASE bulls_media TO bulls_agent;
 GRANT USAGE ON SCHEMA public TO bulls_agent;
 GRANT SELECT ON TABLE orders, resolution_tickets TO bulls_agent;
-GRANT INSERT ON TABLE resolution_tickets TO bulls_agent;
+GRANT INSERT ON TABLE resolution_tickets, security_events TO bulls_agent;
 ```
 
 Не запускай API під migration-роллю. Якщо PostgreSQL розміщено в іншій схемі, адаптуй `search_path` або кваліфікуй таблиці у запитах.
+
+Кожен prompt injection, який спрацював наявними guardrails, записується як `PROMPT_INJECTION_DETECTED` у `security_events` і як структурований JSON у stdout. Журнал містить request ID, OIDC subject, код детектора й довжину повідомлення — сам текст повідомлення не зберігається. Runtime-роль має лише `INSERT`; читання журналу залишай адміністраторам/аудиторам. Для локального запуску без PostgreSQL подія є лише у stdout бекенду. Налаштуй строк зберігання журналу відповідно до політики приватності організації.
 
 ### API-маршрути
 

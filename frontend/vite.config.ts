@@ -7,10 +7,11 @@ const repositoryRoot = fileURLToPath(new URL('..', import.meta.url));
 
 export default defineConfig(({ mode }) => {
   const environment = { ...loadEnv(mode, repositoryRoot, ['VITE_', 'OIDC_ORIGIN']), ...process.env };
-  if (mode === 'production' && (!environment.VITE_OIDC_AUTHORITY || !environment.VITE_OIDC_CLIENT_ID)) {
+  const requireOidc = environment.VITE_REQUIRE_OIDC === 'true';
+  if (requireOidc && (!environment.VITE_OIDC_AUTHORITY || !environment.VITE_OIDC_CLIENT_ID)) {
     throw new Error('Set VITE_OIDC_AUTHORITY and VITE_OIDC_CLIENT_ID before building the production frontend.');
   }
-  if (mode === 'production') {
+  if (requireOidc) {
     let authority: URL;
     try {
       authority = new URL(environment.VITE_OIDC_AUTHORITY ?? '');
