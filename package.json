@@ -1,0 +1,20 @@
+{
+  "name": "bulls-media-ai-order-triage",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c blue,green \"cd backend && npm run start:dev\" \"cd frontend && npm run dev\"",
+    "build": "cd backend && npm run build && cd .. && cd frontend && npm run build",
+    "test": "cd backend && npm run test",
+    "db:up": "docker compose up -d db",
+    "db:down": "docker compose stop db",
+    "db:migrate": "npm run migrate --workspace @bulls-media/agent-backend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

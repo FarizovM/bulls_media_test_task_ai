@@ -1,0 +1,42 @@
+[
+  {
+    "orderId": "ORD-1001",
+    "customerName": "Alex Morgan",
+    "itemName": "Набір керамічних чашок",
+    "category": "Дім і кухня",
+    "totalAmountUsd": 45,
+    "purchaseAgeDays": 3
+  },
+  {
+    "orderId": "ORD-1002",
+    "customerName": "Jamie Lee",
+    "itemName": "Робочий ноутбук",
+    "category": "Електроніка",
+    "totalAmountUsd": 1200,
+    "purchaseAgeDays": 5
+  },
+  {
+    "orderId": "ORD-1003",
+    "customerName": "Taylor Reed",
+    "itemName": "Кросівки для бігу",
+    "category": "Одяг",
+    "totalAmountUsd": 80,
+    "purchaseAgeDays": 45
+  },
+  {
+    "orderId": "ORD-1004",
+    "customerName": "Jordan Kim",
+    "itemName": "Цифрова подарункова картка",
+    "category": "Цифрова подарункова картка",
+    "totalAmountUsd": 25,
+    "purchaseAgeDays": 2
+  },
+  {
+    "orderId": "ORD-1005",
+    "customerName": "Sam Patel",
+    "itemName": "Настільна лампа",
+    "category": "Дім і кухня",
+    "totalAmountUsd": 72,
+    "purchaseAgeDays": 8
+  }
+]

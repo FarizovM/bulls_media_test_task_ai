@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bulls_media
+      POSTGRES_USER: bulls_media
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - bulls_media_pgdata:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
+      - ./backend/seed/local-demo.sql:/docker-entrypoint-initdb.d/002_local_demo_seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bulls_media -d bulls_media"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  bulls_media_pgdata:

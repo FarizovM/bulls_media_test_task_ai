@@ -1,0 +1,9 @@
+{
+  "policyVersion": "2026-01",
+  "effectiveFrom": "2026-01-01",
+  "maxReturnDays": 14,
+  "maxAutoRefundUsd": 150,
+  "nonRefundableCategories": [
+    "Цифрова подарункова картка"
+  ]
+}

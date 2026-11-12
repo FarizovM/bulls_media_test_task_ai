@@ -1,0 +1,85 @@
+services:
+  migrate:
+    profiles: ["migration"]
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: ["npm", "run", "migrate", "--workspace", "@bulls-media/agent-backend"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${MIGRATION_DATABASE_URL:?Set MIGRATION_DATABASE_URL for the migration job}
+      DATABASE_SSL: "true"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      AUTH_BYPASS_DEV: "false"
+      FRONTEND_ORIGINS: ${FRONTEND_ORIGINS:?Set FRONTEND_ORIGINS}
+      OIDC_ISSUER: ${OIDC_ISSUER:?Set OIDC_ISSUER}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:?Set OIDC_AUDIENCE}
+      OIDC_JWKS_URL: ${OIDC_JWKS_URL:?Set OIDC_JWKS_URL}
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL}
+      DATABASE_SSL: "true"
+      DATABASE_POOL_MAX: ${DATABASE_POOL_MAX:-10}
+      DATABASE_STATEMENT_TIMEOUT_MS: ${DATABASE_STATEMENT_TIMEOUT_MS:-5000}
+      DATABASE_QUERY_TIMEOUT_MS: ${DATABASE_QUERY_TIMEOUT_MS:-7000}
+      MOCK_LLM: "false"
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?Set OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-6-luna}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-1000}
+      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-1 minute}
+      USER_RATE_LIMIT_MAX: ${USER_RATE_LIMIT_MAX:-30}
+      USER_RATE_LIMIT_WINDOW_MS: ${USER_RATE_LIMIT_WINDOW_MS:-60000}
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - app
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_OIDC_AUTHORITY: ${VITE_OIDC_AUTHORITY:?Set VITE_OIDC_AUTHORITY}
+        VITE_OIDC_CLIENT_ID: ${VITE_OIDC_CLIENT_ID:?Set VITE_OIDC_CLIENT_ID}
+        VITE_OIDC_SCOPE: ${VITE_OIDC_SCOPE:-openid agent:read agent:triage}
+        OIDC_ORIGIN: ${OIDC_ORIGIN:?Set OIDC_ORIGIN}
+    restart: unless-stopped
+    environment:
+      OIDC_ORIGIN: ${OIDC_ORIGIN:?Set OIDC_ORIGIN}
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:8080"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - app
+
+networks:
+  app:
+    driver: bridge
