@@ -150,3 +150,7 @@ vite.config.ts.timestamp-*
 
 bun.lock
 package-lock.json
+
+.agents
+.claude
+.windsurf

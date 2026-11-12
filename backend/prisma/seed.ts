@@ -1,9 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 import { OrdersDatasetSchema } from '../src/agent/schemas';
 
-const prisma = new PrismaClient();
+const connectionString = process.env.DATABASE_URL;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function seed(): Promise<void> {
   const datasetPath = join(process.cwd(), 'src', 'data', 'orders.json');
@@ -40,4 +46,7 @@ seed()
     process.stderr.write(`Database seed failed: ${error instanceof Error ? error.message : 'unknown error'}\n`);
     process.exitCode = 1;
   })
-  .finally(async () => prisma.$disconnect());
+  .finally(async () => {
+    await prisma.$disconnect();
+    await pool.end();
+  });
