@@ -134,25 +134,24 @@ function formatUsd(value: number) {
       <div class="dashboard-grid">
         <section class="panel request-panel">
           <div class="panel-heading">
-            <div><span class="section-kicker">01 / ЗАПИТ</span><h2>Звернення клієнта</h2></div>
+            <div><span class="section-kicker">01 / ЗАПИТ</span>
+              <h2>Звернення клієнта</h2>
+            </div>
             <span class="step-icon">✳</span>
           </div>
 
-          <div class="field-label-row"><label for="request">ПОВІДОМЛЕННЯ</label><span>{{ message.length }} / 2 000</span></div>
-          <textarea id="request" v-model="message" maxlength="2000" placeholder="Опиши запит клієнта щодо повернення..."></textarea>
+          <div class="field-label-row"><label for="request">ПОВІДОМЛЕННЯ</label><span>{{ message.length }} / 2
+              000</span></div>
+          <textarea id="request" v-model="message" maxlength="2000"
+            placeholder="Опиши запит клієнта щодо повернення..."></textarea>
 
           <div class="scenario-heading"><span>ГОТОВІ СЦЕНАРІЇ</span><span>5 ПРИКЛАДІВ</span></div>
           <div class="scenario-list">
-            <button
-              v-for="scenario in scenarios"
-              :key="scenario.id"
-              class="scenario-button"
-              :class="{ active: selectedScenario === scenario.id }"
-              type="button"
-              @click="useScenario(scenario)"
-            >
+            <button v-for="scenario in scenarios" :key="scenario.id" class="scenario-button"
+              :class="{ active: selectedScenario === scenario.id }" type="button" @click="useScenario(scenario)">
               <span class="scenario-dot"></span>
-              <span class="scenario-text"><strong>{{ scenario.title }}</strong><small>{{ scenario.description }}</small></span>
+              <span class="scenario-text"><strong>{{ scenario.title }}</strong><small>{{ scenario.description
+                  }}</small></span>
               <span class="scenario-arrow">↗</span>
             </button>
           </div>
@@ -167,8 +166,11 @@ function formatUsd(value: number) {
 
         <section class="panel result-panel">
           <div class="panel-heading result-heading">
-            <div><span class="section-kicker">02 / РЕЗУЛЬТАТ</span><h2>Рішення агента</h2></div>
-            <span v-if="result" class="mode-tag" :class="result.mode">{{ result.mode === 'mock' ? 'ДЕМО БЕЗ API' : 'ВИКЛИК ІНСТРУМЕНТА OPENAI' }}</span>
+            <div><span class="section-kicker">02 / РЕЗУЛЬТАТ</span>
+              <h2>Рішення агента</h2>
+            </div>
+            <span v-if="result" class="mode-tag" :class="result.mode">{{ result.mode === 'mock' ? 'ДЕМО БЕЗ API' :
+              'ВИКЛИК ІНСТРУМЕНТА OPENAI' }}</span>
             <span v-else class="pending-tag">ОЧІКУЄ ЗАПИТ</span>
           </div>
 
@@ -193,7 +195,8 @@ function formatUsd(value: number) {
               <div class="decision-facts">
                 <div><span>ЗАМОВЛЕННЯ</span><strong>{{ result.decision.orderId ?? '—' }}</strong></div>
                 <div><span>ТІКЕТ</span><strong>{{ result.decision.ticketId ?? 'Не створено' }}</strong></div>
-                <div><span>ПОВЕРНЕННЯ</span><strong>{{ result.decision.refundAmountUsd === null ? '—' : `$${result.decision.refundAmountUsd.toFixed(2)}` }}</strong></div>
+                <div><span>ПОВЕРНЕННЯ</span><strong>{{ result.decision.refundAmountUsd === null ? '—' :
+                  `$${result.decision.refundAmountUsd.toFixed(2)}` }}</strong></div>
                 <div><span>ВЕРСІЯ ПРАВИЛ</span><strong>{{ result.decision.policyVersion ?? '—' }}</strong></div>
               </div>
               <div v-if="result.decision.deterministicOverrideApplied" class="override-note">
@@ -202,12 +205,18 @@ function formatUsd(value: number) {
             </div>
 
             <div class="trace-section">
-              <div class="subsection-heading"><div><span class="section-kicker">ТРАСУВАННЯ</span><h3>Кроки виконання</h3></div><span>{{ result.traces.length }} КРОКІВ</span></div>
+              <div class="subsection-heading">
+                <div><span class="section-kicker">ТРАСУВАННЯ</span>
+                  <h3>Кроки виконання</h3>
+                </div><span>{{ result.traces.length }} КРОКІВ</span>
+              </div>
               <div class="trace-list">
                 <article v-for="event in result.traces" :key="event.step" class="trace-item">
-                  <span class="trace-marker" :class="event.stage.toLowerCase()">{{ String(event.step).padStart(2, '0') }}</span>
+                  <span class="trace-marker" :class="event.stage.toLowerCase()">{{ String(event.step).padStart(2, '0')
+                    }}</span>
                   <div class="trace-content">
-                    <div class="trace-title-row"><strong>{{ traceTitle(event) }}</strong><span>{{ event.durationMs }} ms</span></div>
+                    <div class="trace-title-row"><strong>{{ traceTitle(event) }}</strong><span>{{ event.durationMs }}
+                        ms</span></div>
                     <span class="trace-stage">{{ stageLabels[event.stage] }}</span>
                     <details v-if="event.input !== undefined || event.output !== undefined" class="trace-details">
                       <summary>Переглянути дані</summary>
@@ -219,12 +228,17 @@ function formatUsd(value: number) {
             </div>
 
             <div v-if="result.decision.customerEmailDraft" class="email-draft">
-              <div class="subsection-heading"><div><span class="section-kicker">ПОВІДОМЛЕННЯ КЛІЄНТУ</span><h3>Чернетка листа</h3></div><span class="draft-icon">✉</span></div>
+              <div class="subsection-heading">
+                <div><span class="section-kicker">ПОВІДОМЛЕННЯ КЛІЄНТУ</span>
+                  <h3>Чернетка листа</h3>
+                </div><span class="draft-icon">✉</span>
+              </div>
               <pre>{{ result.decision.customerEmailDraft }}</pre>
             </div>
 
             <details class="raw-json">
-              <summary><span>Повна відповідь JSON</span><button type="button" @click.prevent.stop="copyJson">Копіювати JSON</button></summary>
+              <summary><span>Повна відповідь JSON</span><button type="button" @click.prevent.stop="copyJson">Копіювати
+                  JSON</button></summary>
               <pre>{{ pretty(result) }}</pre>
             </details>
           </template>
@@ -232,8 +246,11 @@ function formatUsd(value: number) {
       </div>
 
       <section v-if="!authEnabled" class="orders-panel">
-        <div class="orders-title"><div><span class="section-kicker">ДЕМО-ДАНІ / ЛОКАЛЬНА ЗАГЛУШКА</span><h2>Приклади замовлень</h2></div><span class="count-pill">{{ orders.length }} ЗАПИСІВ</span></div>
-        <p class="dataset-note">Локальне демо читає JSON із <code>orders.json</code>; production використовує PostgreSQL.</p>
+        <div class="orders-title">
+          <div><span class="section-kicker">ДЕМО-ДАНІ / ЛОКАЛЬНА ЗАГЛУШКА</span>
+            <h2>Приклади замовлень</h2>
+          </div><span class="count-pill">{{ orders.length }} ЗАПИСІВ</span>
+        </div>
         <div v-if="orders.length" class="orders-table-wrap">
           <table class="orders-table">
             <thead>
@@ -262,7 +279,9 @@ function formatUsd(value: number) {
         </div>
         <p v-else class="table-placeholder">Демо-дані з’являться після підключення бекенду.</p>
       </section>
-      <footer class="page-footer"><span>BULLS MEDIA · ТЕСТОВЕ ЗАВДАННЯ AI DEVELOPER</span><span>Власний оркестратор <i>•</i> PostgreSQL / локальні демо-дані</span></footer>
+      <footer class="page-footer"><span>BULLS MEDIA · ТЕСТОВЕ ЗАВДАННЯ AI DEVELOPER</span><span>Власний оркестратор
+          <i>•</i>
+          PostgreSQL / локальні демо-дані</span></footer>
     </main>
   </div>
 </template>

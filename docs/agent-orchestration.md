@@ -4,13 +4,13 @@
 
 ## Послідовність одного запиту
 
-1. `POST /api/agent/triage` приймає повідомлення і перевіряє його Zod-схемою.
+1. `POST /api/agent/triage` приймає `TriageRequestDto`; NestJS ValidationPipe перетворює й перевіряє DTO до запуску оркестратора.
 2. `GuardrailsService` відсікає короткий, надто довгий, сторонній або схожий на prompt injection запит. Збіг детектора записується як безпечна подія аудиту: request ID, користувач, код детектора та довжина; сирий текст не потрапляє до журналу.
 3. Оркестратор знаходить номер замовлення. Якщо його немає, повертає `MISSING_INFORMATION` і не створює тікет.
-4. `get_order_details` читає замовлення з PostgreSQL у production або з локального JSON у розробці й додає кількість днів від покупки.
+4. `get_order_details` читає замовлення через Prisma з PostgreSQL або з локального JSON у режимі без БД і додає кількість днів від покупки.
 5. `search_return_policy` читає структуровані числові правила з `refund-policy.json`, додає версію політики й знаходить пояснювальний фрагмент у Markdown.
 6. У режимі OpenAI модель отримує перевірені дані та просить викликати `create_resolution_ticket`. У режимі mock цю пропозицію формує простий детермінований планувальник без мережевого запиту.
-7. `create_resolution_ticket` повторно звіряє дату, категорію та суму з даними сервера. Він може перевизначити пропозицію моделі, після чого ідемпотентно зберігає тікет у PostgreSQL; у локальному режимі без бази даних тікет живе в пам'яті процесу.
+7. `create_resolution_ticket` повторно звіряє дату, категорію та суму з даними сервера. Він може перевизначити пропозицію моделі, після чого ідемпотентно зберігає тікет через Prisma у PostgreSQL; у режимі без БД тікет живе в пам'яті процесу.
 8. Оркестратор формує типізоване рішення, чернетку листа і трасу, а Vue показує результат.
 
 ```mermaid
@@ -44,7 +44,7 @@ sequenceDiagram
 - `backend/src/tools/tools.service.ts` — інструменти та локальні дані. Тут лежить детермінований захист перед записом тікета.
 - `backend/src/auth/oidc-auth.guard.ts` — перевірка підпису, issuer, audience і scope access token у production.
 - `backend/src/observability/security-audit.service.ts` — структуроване логування спрацювань prompt injection і запис метаданих у PostgreSQL.
-- `backend/src/database/database.service.ts` та `backend/migrations/` — PostgreSQL, ідемпотентне збереження та схема аудиту тікетів.
+- `backend/src/database/prisma.service.ts`, `backend/src/database/database.service.ts` і `backend/prisma/` — Prisma Client, репозиторій, типізована схема, seed і SQL-міграції PostgreSQL.
 - `backend/src/agent/schemas.ts` — контракти даних, які з'єднують API, агента й інтерфейс.
 - `backend/src/observability/trace-collector.service.ts` — окрема траса на кожен запит, щоб паралельні запити не змішували кроки.
 - `frontend/src/App.vue` — сценарії, рішення, trace та сирий JSON.

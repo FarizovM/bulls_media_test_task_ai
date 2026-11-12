@@ -4,6 +4,7 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+      target: migration
     command: ["npm", "run", "migrate", "--workspace", "@bulls-media/agent-backend"]
     environment:
       NODE_ENV: production

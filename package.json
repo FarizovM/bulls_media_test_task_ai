@@ -7,14 +7,18 @@
     "frontend"
   ],
   "scripts": {
-    "dev": "concurrently -k -n api,web -c blue,green \"cd backend && npm run start:dev\" \"cd frontend && npm run dev\"",
+    "dev": "node scripts/dev.mjs",
+    "dev:services": "concurrently -k -n api,web -c blue,green \"cd backend && npm run start:dev\" \"cd frontend && npm run dev\"",
     "build": "cd backend && npm run build && cd .. && cd frontend && npm run build",
     "test": "cd backend && npm run test",
     "db:up": "docker compose up -d db",
     "db:down": "docker compose stop db",
-    "db:migrate": "npm run migrate --workspace @bulls-media/agent-backend"
+    "db:generate": "npm run prisma:generate --workspace @bulls-media/agent-backend",
+    "db:migrate": "npm run migrate --workspace @bulls-media/agent-backend",
+    "db:seed": "npm run seed --workspace @bulls-media/agent-backend"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "dotenv": "^16.6.1"
   }
 }

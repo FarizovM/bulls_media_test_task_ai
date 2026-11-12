@@ -40,13 +40,13 @@ flowchart LR
     TR --> API
 ```
 
-Бекенд використовує NestJS і Fastify. Власний оркестратор на TypeScript задає послідовність: перевірити звернення, прочитати замовлення, знайти правило, отримати пропозицію планувальника, перевірити її серверними правилами й сформувати відповідь. OpenAI описує такий обмін у [посібнику з function calling](https://developers.openai.com/api/docs/guides/function-calling); NestJS документує [адаптер Fastify](https://docs.nestjs.com/techniques/performance).
+Бекенд використовує NestJS, Fastify та Prisma ORM. Власний оркестратор на TypeScript задає послідовність: перевірити звернення, прочитати замовлення, знайти правило, отримати пропозицію планувальника, перевірити її серверними правилами й сформувати відповідь. OpenAI описує такий обмін у [посібнику з function calling](https://developers.openai.com/api/docs/guides/function-calling); NestJS документує [адаптер Fastify](https://docs.nestjs.com/techniques/performance).
 
 Технічний потік оркестрації описано в [`docs/agent-orchestration.md`](docs/agent-orchestration.md).
 
 ## Демо-дані
 
-`backend/src/data/orders.json` — локальна JSON-заглушка з п’ятьма прикладами. Без `DATABASE_URL` застосунок використовує її для розробки, а тікети зберігає в пам’яті. Якщо підключено PostgreSQL, звідти читаються замовлення і туди записуються тікети. Структуровані правила повернення та їхня версія зберігаються у `refund-policy.json`; Markdown-файл містить пояснення для людей.
+`backend/src/data/orders.json` — джерело п’яти локальних демо-замовлень. Команда `docker compose up --build` запускає PostgreSQL, застосовує Prisma-міграції, повторно заповнює демо-дані через ідемпотентний seed, проганяє тести й лише після цього стартує API та frontend. Prisma читає замовлення, зберігає тікети та події аудиту. Структуровані правила повернення й версія зберігаються у `refund-policy.json`; Markdown-файл містить пояснення для людей.
 
 Production-профіль вимагає PostgreSQL і зупиняється, якщо база або схема недоступні. Запис тікета ідемпотентний за `Idempotency-Key`; у таблиці зберігаються версія політики та ідентифікатор OIDC-користувача, який створив його.
 
@@ -54,29 +54,29 @@ Production-профіль вимагає PostgreSQL і зупиняється, �
 
 Для контейнерного розгортання є окремі [Dockerfile API](backend/Dockerfile), [Dockerfile фронтенду](frontend/Dockerfile) і [production Compose](compose.production.yaml). Конфігурація авторизації фронтенду вбудовується під час його збірки; це публічні параметри OIDC-клієнта, у них не можна передавати секрети.
 
-Задай production змінні в secret manager або локальному `.env`, потім перевір Compose через `docker compose -f compose.production.yaml config -q`. Для міграцій задай окремий привілейований `MIGRATION_DATABASE_URL` і виконай `docker compose -f compose.production.yaml --profile migration run --rm migrate`. API використовує окремий обмежений `DATABASE_URL`. Після міграції запусти `docker compose -f compose.production.yaml up --build -d`. Compose не відкриває API назовні й публікує frontend лише на loopback `127.0.0.1:8080`; TLS заверши на ingress/load balancer і ввімкни там HSTS.
+Задай production змінні в secret manager або локальному `.env`, потім перевір Compose через `docker compose -f compose.production.yaml config -q`. Для міграцій задай окремий привілейований `MIGRATION_DATABASE_URL` із параметром TLS у URL, наприклад `?sslmode=verify-full`, і виконай `docker compose -f compose.production.yaml --profile migration run --rm migrate`. API використовує окремий обмежений `DATABASE_URL`; Prisma runtime додає TLS-параметр при `DATABASE_SSL=true`. Після міграції запусти `docker compose -f compose.production.yaml up --build -d`. Compose не відкриває API назовні й публікує frontend лише на loopback `127.0.0.1:8080`; TLS заверши на ingress/load balancer і ввімкни там HSTS.
 
 ## Локальний запуск
 
-Потрібні Node.js 22.12+ і npm 10+.
+Потрібен Docker Desktop із запущеним Linux engine. Відкрий корінь репозиторію та запусти весь застосунок:
+
+```bash
+docker compose up --build
+```
+
+Compose збирає спільний dev-образ і запускає PostgreSQL, підготовку БД, API та frontend у контейнерах. Сервіс `setup` чекає готову БД, застосовує міграції, заповнює seed і запускає тести; API стартує лише після успішного завершення цього кроку, а frontend — після готовності API. Відкрий <http://localhost:5173>; API доступний на <http://localhost:3000>. Зупини контейнери комбінацією **Ctrl+C** або командою `docker compose down` — дані PostgreSQL збережуться у volume.
+
+Для локальних змін без контейнерів потрібні Node.js 22.12+ і npm 10+. Скопіюй `.env.example` у `.env`; за замовчуванням увімкнені mock LLM і локальний обхід OIDC. Переконайся, що паролі в `POSTGRES_PASSWORD`, `DATABASE_URL`, `MIGRATION_DATABASE_URL` і `DOCKER_DATABASE_URL` узгоджені. Потім встанови залежності та запусти API й frontend на хості (PostgreSQL лишається в Docker):
 
 ```bash
 npm install
 # або: bun install
+bun run dev
 ```
 
-Скопіюй `.env.example` у `.env`. За замовчуванням `MOCK_LLM=true`, а `AUTH_BYPASS_DEV=true` дозволяє локальну розробку без OIDC. Ці параметри дозволені лише поза production. Запусти застосунок із кореня репозиторію:
+Цей альтернативний сценарій також готує БД, seed і перевіряє тести перед стартом локальних API та frontend. Повторний запуск seed оновлює ті самі демо-замовлення, а не створює дублікати. Для ручного керування БД є `bun run db:up`, `bun run db:migrate` і `bun run db:seed`.
 
-```bash
-npm run dev
-# або: bun run dev
-```
-
-Відкрий <http://localhost:5173>. API бекенду доступний на <http://localhost:3000>.
-
-Для локальної PostgreSQL встанови Docker Desktop, задай `POSTGRES_PASSWORD` і `DATABASE_URL` у `.env`, потім виконай `npm run db:up`. Новий контейнер створює схему та заповнює приклади замовлень; міграцію також можна запустити командою `npm run db:migrate`. Наприклад: `DATABASE_URL=postgresql://bulls_media:пароль@localhost:5432/bulls_media` (спецсимволи в паролі потрібно URL-кодувати). Без `DATABASE_URL` локальний режим використовує JSON і пам’ять процесу.
-
-Якщо запуск повідомляє `EADDRINUSE` для портів `3000` або `5173`, інший процес уже використовує їх. Зупини попередній `npm run dev` чи `bun run dev` комбінацією **Ctrl+C** у його терміналі, потім запусти команду знову. Щоб знайти процеси, які слухають ці порти, у PowerShell виконай:
+Якщо запуск повідомляє `EADDRINUSE` для портів `3000`, `5173` або `5432`, інший процес уже використовує їх. Зупини попередній контейнерний чи локальний запуск, потім повтори команду. Щоб знайти процеси, які слухають ці порти, у PowerShell виконай:
 
 ```powershell
 Get-NetTCPConnection -State Listen |
@@ -126,7 +126,7 @@ OPENAI_MODEL=gpt-6-luna
 
 OIDC-клієнт фронтенду має використовувати Authorization Code Flow з PKCE. Зареєструй redirect URI `https://support.example.com/auth/callback` та надай scopes `agent:read` і `agent:triage`. Звичайний `bun run build` збирає локальне демо без OIDC. Production Compose передає `VITE_REQUIRE_OIDC=true`, тому для production-збірки потрібні `VITE_OIDC_AUTHORITY`, `VITE_OIDC_CLIENT_ID`, `VITE_OIDC_SCOPE` і `OIDC_ORIGIN` (точний HTTPS origin OIDC authority). API перевіряє підпис JWT, issuer, audience та потрібний scope за довіреним HTTPS JWKS endpoint.
 
-API має доступ `SELECT` до замовлень і `SELECT`/`INSERT` до тікетів; migration role має окремі DDL-права. API надає `GET /api/health/live` для liveness та `GET /api/health/ready` для перевірки PostgreSQL. Production Compose обмежує кожного OIDC-користувача до 30 запитів за хвилину та має глобальний аварійний ліміт на екземпляр; додай також спільний ліміт на ingress/API gateway для багатоконтейнерного розгортання.
+API має `SELECT` до замовлень і тікетів, `INSERT` до тікетів і `security_events`; migration role має окремі DDL-права. API надає `GET /api/health/live` для liveness та `GET /api/health/ready` для перевірки PostgreSQL. Production Compose обмежує кожного OIDC-користувача до 30 запитів за хвилину та має глобальний аварійний ліміт на екземпляр; додай також спільний ліміт на ingress/API gateway для багатоконтейнерного розгортання.
 
 Після першої міграції надай runtime-ролі лише потрібні права (виконай від імені адміністратора бази, замінивши назву БД і пароль):
 
@@ -183,7 +183,7 @@ Unit-тести перевіряють guardrails, повторні спроби
 
 ## Компроміси, обмеження та наступні кроки
 
-- Без `DATABASE_URL` дані й тікети зберігаються локально; production вимагає PostgreSQL, міграцій та ідемпотентного запису тікетів.
+- `docker compose up --build` запускає весь локальний застосунок у контейнерах. `bun run dev` лишається альтернативою для запуску API й frontend на хості з PostgreSQL у Docker. Для ізольованих unit-тестів можна не задавати `DATABASE_URL`; тоді використовуються JSON-замовлення й пам’ять процесу.
 - Пошук політики працює за простими словами, а не через семантичний пошук. Ліміти й остаточне рішення перевіряються бекендом.
 - Guardrails доповнюють бізнес-правила, але самі по собі не блокують усі prompt injection атаки. Остаточний статус визначає серверний код; модель не може передати довільний текст у пояснення тікета.
 - Локальні приклади замовлень лишаються JSON-даними. У production таблицю PostgreSQL має наповнювати авторитетне джерело; інтеграцію з конкретною системою ще потрібно визначити й підключити.

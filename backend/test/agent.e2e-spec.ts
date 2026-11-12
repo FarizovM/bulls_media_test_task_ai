@@ -1,21 +1,37 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ValidationPipe } from '@nestjs/common';
 import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import { AppModule } from '../src/app.module';
+import { SecurityAuditService, PromptInjectionEvent } from '../src/observability/security-audit.service';
+import { PrismaService } from '../src/database/prisma.service';
 
 describe('POST /api/agent/triage (integration)', () => {
   let app: NestFastifyApplication;
   let moduleRef: TestingModule;
+  let securityEvents: PromptInjectionEvent[];
 
   before(async () => {
     process.env.MOCK_LLM = 'true';
-    moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    securityEvents = [];
+    moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(PrismaService)
+      .useValue({ enabled: false })
+      .overrideProvider(SecurityAuditService)
+      .useValue({ recordPromptInjection: async (event: PromptInjectionEvent) => { securityEvents.push(event); } })
+      .compile();
     app = moduleRef.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
     app.setGlobalPrefix('api');
+    app.useGlobalPipes(new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      forbidUnknownValues: true,
+    }));
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
   });
@@ -72,5 +88,8 @@ describe('POST /api/agent/triage (integration)', () => {
     assert.equal(response.json().traces.some((event: { stage: string }) => (
       event.stage === 'TOOL_CALL'
     )), false);
+    assert.equal(securityEvents.length, 1);
+    assert.equal(securityEvents[0].detectionCode, 'PROMPT_INJECTION_DETECTED');
+    assert.equal('message' in securityEvents[0], false);
   });
 });

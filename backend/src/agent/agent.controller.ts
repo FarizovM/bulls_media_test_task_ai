@@ -3,7 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { AgentOrchestratorService } from './agent.orchestrator';
-import { Scenario, TriageRequestSchema } from './schemas';
+import { Scenario } from './schemas';
+import { TriageRequestDto } from './dto/triage-request.dto';
 import { ToolsService } from '../tools/tools.service';
 import { OidcAuthGuard, RequireScope } from '../auth/oidc-auth.guard';
 
@@ -75,17 +76,10 @@ export class AgentController {
   @Post('triage')
   @RequireScope('agent:triage')
   triage(
-    @Body() body: unknown,
+    @Body() body: TriageRequestDto,
     @Headers('idempotency-key') idempotencyHeader: string | undefined,
     @Req() request: AuthenticatedRequest,
   ) {
-    const parsed = TriageRequestSchema.safeParse(body);
-    if (!parsed.success) {
-      throw new BadRequestException({
-        message: 'Повідомлення має містити від 1 до 2 000 символів.',
-        issues: parsed.error.issues,
-      });
-    }
     if (!idempotencyHeader) {
       throw new BadRequestException('Передай UUID у заголовку Idempotency-Key.');
     }
@@ -93,6 +87,6 @@ export class AgentController {
     if (!key.success) throw new BadRequestException('Idempotency-Key має бути UUID.');
     const actorId = request.user?.sub;
     if (!actorId) throw new BadRequestException('Authenticated user identity is missing.');
-    return this.orchestrator.triage(parsed.data.message, key.data, actorId, request.id ?? randomUUID());
+    return this.orchestrator.triage(body.message, key.data, actorId, request.id ?? randomUUID());
   }
 }

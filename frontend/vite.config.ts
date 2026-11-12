@@ -37,8 +37,14 @@ export default defineConfig(({ mode }) => {
     envDir: repositoryRoot,
     plugins: [vue()],
     server: {
+      host: process.env.VITE_DEV_HOST ?? '127.0.0.1',
+      port: Number(process.env.VITE_DEV_PORT ?? 5173),
+      strictPort: true,
+      watch: process.env.VITE_FILE_WATCH_POLLING === 'true'
+        ? { usePolling: true, interval: 1_000 }
+        : undefined,
       proxy: {
-        '/api': 'http://localhost:3000',
+        '/api': process.env.API_PROXY_TARGET ?? 'http://localhost:3000',
       },
     },
   };

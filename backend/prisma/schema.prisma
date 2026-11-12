@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Order {
+  orderId        String   @id @map("order_id") @db.VarChar(50)
+  customerName   String   @map("customer_name") @db.VarChar(200)
+  itemName       String   @map("item_name") @db.VarChar(300)
+  category       String   @db.VarChar(100)
+  totalAmountUsd Decimal  @map("total_amount_usd") @db.Decimal(12, 2)
+  purchasedAt    DateTime @map("purchased_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("orders")
+}
+
+model ResolutionTicket {
+  ticketId                     String   @id @map("ticket_id") @db.VarChar(80)
+  orderId                      String   @map("order_id") @db.VarChar(50)
+  status                       String
+  refundAmountUsd              Decimal? @map("refund_amount_usd") @db.Decimal(12, 2)
+  reasonCode                   String   @map("reason_code")
+  deterministicOverrideApplied Boolean  @map("deterministic_override_applied")
+  note                         String
+  idempotencyKey               String   @unique @map("idempotency_key") @db.Uuid
+  requestHash                  String   @map("request_hash") @db.VarChar(64)
+  actorSubject                 String   @map("actor_subject") @db.VarChar(255)
+  policyVersion                String   @map("policy_version") @db.VarChar(40)
+  createdAt                    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([orderId, createdAt(sort: Desc)], map: "resolution_tickets_order_created_idx")
+  @@map("resolution_tickets")
+}
+
+model SecurityEvent {
+  eventId       String   @id @map("event_id") @db.Uuid
+  eventType     String   @map("event_type")
+  requestId     String   @map("request_id") @db.VarChar(100)
+  actorSubject  String   @map("actor_subject") @db.VarChar(255)
+  detectionCode String   @map("detection_code") @db.VarChar(100)
+  inputLength   Int      @map("input_length") @db.SmallInt
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([createdAt(sort: Desc)], map: "security_events_created_at_idx")
+  @@index([actorSubject, createdAt(sort: Desc)], map: "security_events_actor_created_at_idx")
+  @@map("security_events")
+}

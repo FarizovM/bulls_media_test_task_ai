@@ -9,6 +9,7 @@ import { OidcAuthGuard } from './auth/oidc-auth.guard';
 import { DatabaseService } from './database/database.service';
 import { HealthController } from './health/health.controller';
 import { SecurityAuditService } from './observability/security-audit.service';
+import { PrismaService } from './database/prisma.service';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true, envFilePath: ['../.env', '.env'] })],
@@ -19,6 +20,7 @@ import { SecurityAuditService } from './observability/security-audit.service';
     ToolsService,
     TraceCollectorService,
     OidcAuthGuard,
+    PrismaService,
     DatabaseService,
     SecurityAuditService,
   ],

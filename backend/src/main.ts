@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { randomUUID } from 'node:crypto';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import {
@@ -74,6 +75,14 @@ async function bootstrap(): Promise<void> {
       genReqId: () => randomUUID(),
     }),
   );
+
+  app.useGlobalPipes(new ValidationPipe({
+    transform: true,
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    forbidUnknownValues: true,
+    exceptionFactory: () => new BadRequestException('Повідомлення має містити від 1 до 2 000 символів.'),
+  }));
 
   app.getHttpAdapter().getInstance().addHook('onSend', async (request, reply, payload) => {
     reply.header('X-Request-ID', request.id);
