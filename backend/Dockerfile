@@ -1,12 +1,12 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 RUN apk add --no-cache openssl
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json* ./
 COPY backend/package.json backend/package.json
 COPY frontend/package.json frontend/package.json
-RUN npm ci
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 COPY backend backend
-RUN npm run build --workspace @bulls-media/agent-backend
+RUN DATABASE_URL="postgresql://build:build@localhost:5432/build" npm run build --workspace @bulls-media/agent-backend
 
 FROM build AS migration
 ENV NODE_ENV=production
@@ -18,11 +18,15 @@ ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 WORKDIR /app
 RUN apk add --no-cache openssl
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json* ./
 COPY backend/package.json backend/package.json
 COPY frontend/package.json frontend/package.json
 COPY backend/prisma backend/prisma
-RUN npm ci --omit=dev --workspace @bulls-media/agent-backend --include-workspace-root=false \
+RUN if [ -f package-lock.json ]; then \
+      npm ci --omit=dev --workspace @bulls-media/agent-backend --include-workspace-root=false; \
+    else \
+      npm install --omit=dev --workspace @bulls-media/agent-backend --include-workspace-root=false; \
+    fi \
   && npm cache clean --force
 COPY --from=build --chown=node:node /app/backend/dist backend/dist
 USER node

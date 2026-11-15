@@ -55,10 +55,63 @@ export interface TriageResponse {
   mode: 'mock' | 'openai';
 }
 
+interface ApiErrorBody {
+  message?: unknown;
+  retryAfterSeconds?: unknown;
+}
+
+async function parseJsonSafe(response: Response): Promise<unknown> {
+  const text = await response.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+function formatApiError(response: Response, body: ApiErrorBody | null): string {
+  const retryAfterHeader = Number(response.headers.get('Retry-After'));
+  const retryAfterSeconds =
+    typeof body?.retryAfterSeconds === 'number' && Number.isFinite(body.retryAfterSeconds)
+      ? Math.max(1, Math.ceil(body.retryAfterSeconds))
+      : Number.isFinite(retryAfterHeader) && retryAfterHeader > 0
+        ? Math.ceil(retryAfterHeader)
+        : null;
+
+  const rawMessage = Array.isArray(body?.message)
+    ? body.message.filter((item): item is string => typeof item === 'string').join(' ')
+    : typeof body?.message === 'string'
+      ? body.message
+      : '';
+
+  if (response.status === 429) {
+    if (rawMessage && !/^(Rate limit exceeded|The service is temporarily busy)\.?$/i.test(rawMessage)) {
+      return rawMessage;
+    }
+    return retryAfterSeconds
+      ? `Перевищено ліміт запитів. Повторіть спробу через ${retryAfterSeconds} с.`
+      : 'Перевищено ліміт запитів. Зачекайте трохи та повторіть спробу.';
+  }
+
+  if (response.status === 401) return 'Потрібна повторна авторизація.';
+  if (response.status === 403) return rawMessage || 'Недостатньо прав для виконання цієї дії.';
+  if (response.status >= 500) {
+    return rawMessage && rawMessage !== 'Internal server error'
+      ? rawMessage
+      : 'Внутрішня помилка сервера. Спробуйте ще раз за кілька секунд.';
+  }
+
+  return rawMessage || `Помилка запиту (${response.status}).`;
+}
+
 async function getJson<T>(url: string): Promise<T> {
   const response = await authenticatedFetch(url);
-  if (!response.ok) throw new Error(`Request failed (${response.status})`);
-  return response.json() as Promise<T>;
+  const body = await parseJsonSafe(response);
+  if (!response.ok) {
+    throw new Error(formatApiError(response, (body && typeof body === 'object' ? body : null) as ApiErrorBody | null));
+  }
+  return body as T;
 }
 
 export function getScenarios(): Promise<Scenario[]> {
@@ -79,9 +132,9 @@ export async function triage(message: string, idempotencyKey: string): Promise<T
     body: JSON.stringify({ message }),
   });
 
-  const body = await response.json();
+  const body = await parseJsonSafe(response);
   if (!response.ok) {
-    throw new Error(body.message ?? `Request failed (${response.status})`);
+    throw new Error(formatApiError(response, (body && typeof body === 'object' ? body : null) as ApiErrorBody | null));
   }
   return body as TriageResponse;
 }

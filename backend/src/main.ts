@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { randomUUID } from 'node:crypto';
-import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, ValidationPipe } from '@nestjs/common';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import {
@@ -103,6 +103,22 @@ async function bootstrap(): Promise<void> {
     global: true,
     max: Number(process.env.RATE_LIMIT_MAX ?? 30),
     timeWindow: process.env.RATE_LIMIT_WINDOW ?? '1 minute',
+    errorResponseBuilder: (_request, context) => {
+      const retryAfterSeconds = Math.max(1, Math.ceil(context.ttl / 1000));
+      const status = context.statusCode === 403 ? HttpStatus.FORBIDDEN : HttpStatus.TOO_MANY_REQUESTS;
+      return new HttpException(
+        {
+          statusCode: status,
+          error: status === HttpStatus.FORBIDDEN ? 'Forbidden' : 'Too Many Requests',
+          message:
+            status === HttpStatus.FORBIDDEN
+              ? 'Доступ тимчасово обмежено через перевищення ліміту запитів.'
+              : `Перевищено ліміт запитів. Повторіть спробу через ${retryAfterSeconds} с.`,
+          retryAfterSeconds,
+        },
+        status,
+      );
+    },
   });
 
   app.setGlobalPrefix('api');

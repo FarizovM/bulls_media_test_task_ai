@@ -8,8 +8,9 @@ config({ path: resolve(root, '.env'), quiet: true });
 
 const env = { ...process.env };
 env.POSTGRES_PASSWORD ||= 'change-this-local-password';
+env.POSTGRES_HOST_PORT ||= '5433';
 const encodedPassword = encodeURIComponent(env.POSTGRES_PASSWORD);
-env.DATABASE_URL ||= `postgresql://bulls_media:${encodedPassword}@localhost:5432/bulls_media`;
+env.DATABASE_URL ||= `postgresql://bulls_media:${encodedPassword}@localhost:${env.POSTGRES_HOST_PORT}/bulls_media`;
 env.MIGRATION_DATABASE_URL ||= env.DATABASE_URL;
 env.DATABASE_SSL ||= 'false';
 env.AUTH_BYPASS_DEV ||= 'true';

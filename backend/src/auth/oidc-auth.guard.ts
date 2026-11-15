@@ -94,11 +94,31 @@ export class OidcAuthGuard implements CanActivate {
           if (value.resetAt <= now) this.subjectLimits.delete(key);
         }
       }
-      if (this.subjectLimits.size >= 10_000) throw new HttpException('The service is temporarily busy.', HttpStatus.TOO_MANY_REQUESTS);
+      if (this.subjectLimits.size >= 10_000) {
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.TOO_MANY_REQUESTS,
+            error: 'Too Many Requests',
+            message: 'Сервіс тимчасово перевантажений. Спробуйте ще раз трохи пізніше.',
+          },
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
       bucket = { count: 0, resetAt: now + windowMs };
       this.subjectLimits.set(subject, bucket);
     }
     bucket.count += 1;
-    if (bucket.count > max) throw new HttpException('Rate limit exceeded.', HttpStatus.TOO_MANY_REQUESTS);
+    if (bucket.count > max) {
+      const retryAfterSeconds = Math.max(1, Math.ceil((bucket.resetAt - now) / 1000));
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
+          error: 'Too Many Requests',
+          message: `Перевищено ліміт запитів. Повторіть спробу через ${retryAfterSeconds} с.`,
+          retryAfterSeconds,
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
   }
 }
