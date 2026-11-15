@@ -147,3 +147,10 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+bun.lock
+package-lock.json
+
+.agents
+.claude
+.windsurf
